@@ -6,22 +6,22 @@ services:
     image: mariadb:10.3
     container_name: mariadb
     ports:
-      - "3307:3306"
+      - "3306:3306"
     volumes:
       - ./store/:/var/lib/mysql
     mem_limit: 512m
     networks:
       - mysqlnetwork
     environment:
-      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_DATABASE=local
       - MYSQL_USER=root
-      - MYSQL_PASSWORD=root
+      - MYSQL_PASSWORD=123456
       - PMA_ARBITRARY=1
       - PMA_HOST=mysql
       - PMA_PORT=3306
       - PMA_USER=root
-      - PMA_PASSWORD=root
+      - PMA_PASSWORD=123456
 
   mysql-admin:
     restart: always
@@ -38,7 +38,32 @@ services:
       PMA_HOST: mysql
       PMA_PORT: 3306
       PMA_USER: root
-      PMA_PASSWORD: root
+      PMA_PASSWORD: 123456
+
+  dn-ms-user:
+    restart: always
+    image: dn-ms-user
+    container_name: dn-ms-user
+    volumes:
+      - ./ms-user/:/var/ms-user-data
+    ports:
+      - "8300:8300"
+    mem_limit: 512m
+    networks:
+      - mysqlnetwork
+    depends_on:
+      - mysql
+      - redis-server
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: 123456
+      DB_NAME: ms_user
+      AUTH_REDIS_URL: redis://redis-server:6379
+      REDIS_TTL: 86400
+      JWT_SECRET: DN-MS-APP-!@#=-0
+      JWT_EXPIRESIN: 86400
 
   redis-server:
     restart: always
@@ -48,7 +73,7 @@ services:
     sysctls:
       - net.core.somaxconn=65535
     ports:
-      - "6380:6379"
+      - "6379:6379"
     volumes:
       - ./redis:/data
     mem_limit: 96m
