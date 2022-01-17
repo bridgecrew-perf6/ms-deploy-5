@@ -9,9 +9,9 @@ services:
       - "3306:3306"
     volumes:
       - ./store/:/var/lib/mysql
-    mem_limit: 512m
+    mem_limit: 256m
     networks:
-      - mysqlnetwork
+      - ms_app_network
     environment:
       - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_DATABASE=local
@@ -29,9 +29,9 @@ services:
     container_name: mariadb-phpmyadmin
     ports:
       - "8001:80"
-    mem_limit: 512m
+    mem_limit: 128m
     networks:
-      - mysqlnetwork
+      - ms_app_network
     depends_on:
       - mysql
     environment:
@@ -48,12 +48,13 @@ services:
       - ./ms-user/:/var/ms-user-data
     ports:
       - "8300:8300"
-    mem_limit: 512m
+    mem_limit: 128m
     networks:
-      - mysqlnetwork
+      - ms_app_network
     depends_on:
       - mysql
       - redis-server
+      - rabbitmq
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
@@ -76,15 +77,33 @@ services:
       - "6379:6379"
     volumes:
       - ./redis:/data
-    mem_limit: 96m
+    mem_limit: 64m
     networks:
-      - mysqlnetwork
+      - ms_app_network
+
+  rabbitmq:
+      image: rabbitmq:3-management
+      container_name: rabbitmq
+      hostname: rabbitmq
+      volumes:
+        - ./rabbitmq/:/var/lib/rabbitmq
+      ports:
+        - "5672:5672"
+        - "15672:15672"
+      environment:
+        RABBITMQ_DEFAULT_USER: admin
+        RABBITMQ_DEFAULT_PASS: admin
+      
+      networks:
+        - ms_app_network
+
 volumes:
   mysql:
     driver: local
   redis:
     driver: local
+  
 
 networks:
-  mysqlnetwork:
+  ms_app_network:
     driver: bridge

@@ -1,2 +1,3 @@
 ms-app-compose/redis
 ms-app-compose/store
+ms-app-compose/rabbitmq
