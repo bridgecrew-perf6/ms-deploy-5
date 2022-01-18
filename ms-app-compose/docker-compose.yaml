@@ -1,5 +1,6 @@
-version: '2.3'
+# docker-compose up --detach
 
+version: '2.3'
 services:
   mysql:
     restart: always
@@ -47,7 +48,7 @@ services:
     volumes:
       - ./ms-user/:/var/ms-user-data
     ports:
-      - "8300:8300"
+      - "17001:18001"
     mem_limit: 128m
     networks:
       - ms_app_network
@@ -55,16 +56,26 @@ services:
       - mysql
       - redis-server
       - rabbitmq
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: 123456
-      DB_NAME: ms_user
-      AUTH_REDIS_URL: redis://redis-server:6379
-      REDIS_TTL: 86400
-      JWT_SECRET: DN-MS-APP-!@#=-0
-      JWT_EXPIRESIN: 86400
+    env_file:
+      - share.env
+  
+  dn-ms-notification:
+    restart: always
+    image: dn-ms-notification
+    container_name: dn-ms-notification
+    volumes:
+      - ./ms-notification/:/var/ms-notification-data
+    ports:
+      - "17002:18002"
+    mem_limit: 128m
+    networks:
+      - ms_app_network
+    depends_on:
+      - mysql
+      - redis-server
+      - rabbitmq
+    env_file:
+      - share.env
 
   redis-server:
     restart: always
@@ -82,20 +93,52 @@ services:
       - ms_app_network
 
   rabbitmq:
-      image: rabbitmq:3-management
-      container_name: rabbitmq
-      hostname: rabbitmq
-      volumes:
-        - ./rabbitmq/:/var/lib/rabbitmq
-      ports:
-        - "5672:5672"
-        - "15672:15672"
-      environment:
-        RABBITMQ_DEFAULT_USER: admin
-        RABBITMQ_DEFAULT_PASS: admin
-      
-      networks:
-        - ms_app_network
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    volumes:
+      - ./rabbitmq/:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    
+    networks:
+      - ms_app_network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+    environment:
+      SPAN_STORAGE_TYPE: badger 
+      BADGER_EPHEMERAL: 'false'
+      BADGER_DIRECTORY_VALUE: /badger/data
+      BADGER_DIRECTORY_KEY: /badger/key
+
+    volumes:
+      - ./jaeger/:/badger
+    networks:
+      - ms_app_network
+
+  hotrod:
+    image: jaegertracing/example-hotrod:latest
+    container_name: jeager-example-remove
+    ports: 
+      - "8200:8080"
+    command: ["all"]
+    environment:
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+    networks:
+      - ms_app_network
+    depends_on:
+      - jaeger
+
 
 volumes:
   mysql:
