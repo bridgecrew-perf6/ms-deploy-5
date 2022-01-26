@@ -46,8 +46,7 @@ services:
     image: dn-ms-user
     container_name: dn-ms-user
     volumes:
-      - ./data/ms-user/:/var/ms-user-data
-      - ./data/ms-user/logs:/app/logs
+      - ./data/logs/user:/app/logs
     ports:
       - "17001:18001"
     mem_limit: 128m
@@ -59,17 +58,18 @@ services:
       - rabbitmq
     env_file:
       - share.env
+    environment:
+      OTEL_SERVICE_NAME: ms-user
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://tempo:14268/api/traces
+      LOG_FILE_NAME: /app/logs/app.log
   
   dn-ms-notification:
     restart: always
     image: dn-ms-notification
     container_name: dn-ms-notification
     volumes:
-      - ./data/logs:/app/logs
-    environment:
-      OTEL_SERVICE_NAME: ms-notification
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://tempo:14268/api/traces
-      LOG_FILE_NAME: /app/logs/ms-notification.log
+      - ./data/logs/notification:/app/logs
+    
     ports:
       - "16101:16001"
       - "17003:18003"
@@ -82,6 +82,10 @@ services:
       - rabbitmq
     env_file:
       - share.env
+    environment:
+      OTEL_SERVICE_NAME: ms-notification
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://tempo:14268/api/traces
+      LOG_FILE_NAME: /app/logs/app.log
 
   redis-server:
     restart: always

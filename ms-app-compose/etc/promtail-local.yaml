@@ -16,11 +16,43 @@ scrape_configs:
       - targets:
           - localhost
         labels:
+          app: ms-service
           job: ms-dn-notification
-          __path__: /app/logs/ms-dn-notification/log*.log
+          __path__: /app/logs/notification/*.log
     pipeline_stages:
       - match:
           selector: '{job="ms-dn-notification"}'
+          stages:
+          - regex:
+              expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}\s\d{1,2}\:\d{2}\:\d{2}\.\d{3})\s+(?P<level>[A-Z]{4,5})\s[(?P<serviceName>.*),(?P<traceId>.*),(?P<spanId>.*)]\s(?P<pid>\d)\s---\s[\s*(?P<thread>.*)]\s(?P<logger>.*)\s+\:\s(?P<message>.*)$'
+          - labels:
+              timestamp:
+              level:
+              serviceName:
+              traceId:
+              spanId:
+              pid:
+              thread:
+              logger:
+              message:
+          - timestamp:
+              format: '2006-01-02 15:04:05.000'
+              source: timestamp
+      # https://grafana.com/docs/loki/latest/clients/promtail/stages/multiline/
+      - multiline:
+          firstline: '^\d{4}-\d{2}-\d{2}\s\d{1,2}\:\d{2}\:\d{2}\.\d{3}'
+          max_wait_time: 3s
+  - job_name: ms-dn-user
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          app: ms-service
+          job: ms-dn-user
+          __path__: /app/logs/user/*.log
+    pipeline_stages:
+      - match:
+          selector: '{job="ms-dn-user"}'
           stages:
           - regex:
               expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}\s\d{1,2}\:\d{2}\:\d{2}\.\d{3})\s+(?P<level>[A-Z]{4,5})\s[(?P<serviceName>.*),(?P<traceId>.*),(?P<spanId>.*)]\s(?P<pid>\d)\s---\s[\s*(?P<thread>.*)]\s(?P<logger>.*)\s+\:\s(?P<message>.*)$'
